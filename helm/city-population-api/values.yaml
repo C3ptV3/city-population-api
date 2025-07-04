@@ -1,0 +1,119 @@
+# Default values for city-population-api
+replicaCount: 2
+
+image:
+  repository: city-population-api
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: api.example.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: api-tls-secret
+  #    hosts:
+  #      - api.example.local
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Application specific configuration
+env:
+  ELASTICSEARCH_HOST: "city-cluster-master"
+  ELASTICSEARCH_PORT: "9200"
+  PORT: "5000"
+
+# Elasticsearch subchart configuration
+elasticsearch:
+  enabled: true
+  replicas: 1
+  minimumMasterNodes: 1
+  clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
+  
+  # Resources for Elasticsearch
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  
+  # Persistence
+  persistence:
+    enabled: true
+    size: "10Gi"
+  
+  # Security
+  protocol: http
+  httpPort: 9200
+  transportPort: 9300
+  
+  # Disable security for simplicity (enable in production)
+  esConfig:
+    elasticsearch.yml: |
+      xpack.security.enabled: false
+      xpack.security.transport.ssl.enabled: false
+      xpack.security.http.ssl.enabled: false
+  
+  # Reduce heap size for development
+  esJavaOpts: "-Xmx512m -Xms512m"
+  
+  # Single node configuration
+  clusterName: "city-cluster"
+  nodeGroup: "master"
+  masterService: ""
+  
+  # Roles
+  roles:
+    master: "true"
+    ingest: "true"
+    data: "true"
+    remote_cluster_client: "true"
+    ml: "false"
